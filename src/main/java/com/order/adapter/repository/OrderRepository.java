@@ -12,4 +12,6 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface OrderRepository extends ReactiveMongoRepository<OrderDetails, String> {
 
+	public Flux<OrderDetails> findByCustomerId(String customerId);
+
 }

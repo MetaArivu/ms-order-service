@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +29,7 @@ import com.order.server.config.AppProperties;
 import com.order.server.exceptions.InvalidInputException;
 import com.order.server.secutiry.JWTUtil;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -48,16 +50,10 @@ public class OrderServiceImpl implements OrderService {
 	private JWTUtil jwtUtil;
 
 	@Override
-	public Mono<PaymentDetails> save(PaymentDetails _payment) {
-
-		log.info("Save Payment Details=" + _payment);
-
-		if (_payment == null || !_payment.isValid()) {
-			Mono<PaymentDetails> fallback = Mono.error(new InvalidInputException(PaymentDetails.invalidMsg()));
-			return fallback;
-		}
-
-		return Mono.just(_payment);
+	public Flux<OrderDetails> fetchOrderDetails() {
+		String authHeader = MDC.get("Authorization");
+		String userId = jwtUtil.getUserIdFromToken(authHeader);
+		return repo.findByCustomerId(userId);
 	}
 
 	@Override
@@ -126,7 +122,7 @@ public class OrderServiceImpl implements OrderService {
 			return null;
 		}
 	}
-	
+
 	private void clearCart(String authHeader) {
 		try {
 			String userId = jwtUtil.getUserIdFromToken(authHeader);
@@ -134,10 +130,10 @@ public class OrderServiceImpl implements OrderService {
 			data.put("customerId", userId);
 			String url = appProp.getClearCartUrl();
 			log.info("Clear Cart URL={}", url);
-			log.info("Clear Cart Data={}",data);
+			log.info("Clear Cart Data={}", data);
 			HttpHeaders headers = new HttpHeaders();
 			headers.add("Authorization", authHeader);
-			HttpEntity httpEntity = new HttpEntity<>(data,headers);
+			HttpEntity httpEntity = new HttpEntity<>(data, headers);
 
 			ResponseEntity<com.order.adapter.dto.Response> responseEntity = this.restTemplate.exchange(url,
 					HttpMethod.POST, httpEntity, com.order.adapter.dto.Response.class);

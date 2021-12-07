@@ -63,7 +63,6 @@ public class JWTUtil {
 	public String getUserIdFromToken(String _token) {
 		_token = _token.substring(7);
 		String token = this.getUsernameFromToken(_token);
-		System.out.println("**token****" + token);
 		String split[] = token.split("\\|");
 		return split[0];
 	}

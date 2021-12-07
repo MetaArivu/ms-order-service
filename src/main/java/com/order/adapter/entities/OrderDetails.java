@@ -6,6 +6,8 @@ import java.util.List;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Document(collection = "order_details")
 public class OrderDetails extends BaseEntity {
 
@@ -15,8 +17,23 @@ public class OrderDetails extends BaseEntity {
 	private boolean paymentStatus;
 
 	private List<LinkedHashMap> lineItems;
+
+	@JsonIgnore
 	@Transient
 	private String authorization;
+
+	public OrderDetails() {
+		
+	}
+	
+	public OrderDetails(String cartId, String customerId, double total, boolean paymentStatus,
+			List<LinkedHashMap> lineItems) {
+		super();
+		this.cartId = cartId;
+		this.customerId = customerId;
+		this.total = total;
+		this.paymentStatus = paymentStatus;
+	}
 
 	public OrderDetails(String cartId, String customerId, double total, boolean paymentStatus, String authorization,
 			List<LinkedHashMap> lineItems) {
@@ -104,7 +121,6 @@ public class OrderDetails extends BaseEntity {
 		this.lineItems = lineItems;
 	}
 
-	
 	@Override
 	public String toString() {
 		return id + "|" + cartId + "|" + customerId + "|" + total + "|" + paymentStatus;

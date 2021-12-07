@@ -1,10 +1,8 @@
 package com.order.adapter.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.order.adapter.entities.BaseEntity;
 
 public class PaymentDetails {
 
