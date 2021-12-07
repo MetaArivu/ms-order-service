@@ -9,7 +9,7 @@
 ## API
 
 - Welcome API
-  - curl --location --request GET 'http://localhost:6061/order-service/welcome'
+  - curl --location --request GET 'http://localhost:6069/order-service/welcome'
 
 
 
