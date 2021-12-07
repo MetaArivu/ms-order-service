@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Document(collection = "order_details")
 public class OrderDetails extends BaseEntity {
 
+	private String orderNo;
+	private java.util.Date orderDate;
 	private String cartId;
 	private String customerId;
 	private double total;
@@ -23,9 +25,9 @@ public class OrderDetails extends BaseEntity {
 	private String authorization;
 
 	public OrderDetails() {
-		
+
 	}
-	
+
 	public OrderDetails(String cartId, String customerId, double total, boolean paymentStatus,
 			List<LinkedHashMap> lineItems) {
 		super();
@@ -38,6 +40,8 @@ public class OrderDetails extends BaseEntity {
 	public OrderDetails(String cartId, String customerId, double total, boolean paymentStatus, String authorization,
 			List<LinkedHashMap> lineItems) {
 		super();
+		this.orderNo = System.currentTimeMillis() + "";
+		this.orderDate = new java.util.Date();
 		this.cartId = cartId;
 		this.customerId = customerId;
 		this.total = total;
@@ -119,6 +123,14 @@ public class OrderDetails extends BaseEntity {
 
 	public void addLineItems(List<LinkedHashMap> lineItems) {
 		this.lineItems = lineItems;
+	}
+
+	public String getOrderNo() {
+		return orderNo;
+	}
+
+	public java.util.Date getOrderDate() {
+		return orderDate;
 	}
 
 	@Override
