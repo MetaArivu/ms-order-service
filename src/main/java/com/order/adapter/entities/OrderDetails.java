@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.order.adapter.dto.LineItems;
 
 @Document(collection = "order_details")
 public class OrderDetails extends BaseEntity {
@@ -17,8 +18,10 @@ public class OrderDetails extends BaseEntity {
 	private String customerId;
 	private double total;
 	private boolean paymentStatus;
-
-	private List<LinkedHashMap> lineItems;
+	private String paymentId;
+	private int stage;
+	
+	private List<LineItems> lineItems;
 
 	@JsonIgnore
 	@Transient
@@ -29,16 +32,17 @@ public class OrderDetails extends BaseEntity {
 	}
 
 	public OrderDetails(String cartId, String customerId, double total, boolean paymentStatus,
-			List<LinkedHashMap> lineItems) {
+			List<LineItems> lineItems, int stage) {
 		super();
 		this.cartId = cartId;
 		this.customerId = customerId;
 		this.total = total;
 		this.paymentStatus = paymentStatus;
+		this.stage = stage;
 	}
 
 	public OrderDetails(String cartId, String customerId, double total, boolean paymentStatus, String authorization,
-			List<LinkedHashMap> lineItems) {
+			List<LineItems> lineItems,  int stage) {
 		super();
 		this.orderNo = System.currentTimeMillis() + "";
 		this.orderDate = new java.util.Date();
@@ -46,7 +50,9 @@ public class OrderDetails extends BaseEntity {
 		this.customerId = customerId;
 		this.total = total;
 		this.paymentStatus = paymentStatus;
+		this.lineItems = lineItems;
 		this.authorization = authorization;
+		this.stage = stage;
 	}
 
 	public static class Builder {
@@ -55,8 +61,9 @@ public class OrderDetails extends BaseEntity {
 		private double total;
 		private boolean paymentStatus;
 		private String authorization;
-		private List<LinkedHashMap> lineItems;
-
+		private List<LineItems> lineItems;
+		private int stage;
+		
 		public Builder cartId(String cartId) {
 			this.cartId = cartId;
 			return this;
@@ -82,13 +89,18 @@ public class OrderDetails extends BaseEntity {
 			return this;
 		}
 
-		public Builder lineItems(List<LinkedHashMap> lineItems) {
+		public Builder lineItems(List<LineItems> lineItems) {
 			this.lineItems = lineItems;
+			return this;
+		}
+		
+		public Builder stage(int stage) {
+			this.stage = stage;
 			return this;
 		}
 
 		public OrderDetails build() {
-			return new OrderDetails(cartId, customerId, total, paymentStatus, authorization, lineItems);
+			return new OrderDetails(cartId, customerId, total, paymentStatus, authorization, lineItems, stage);
 		}
 
 	}
@@ -117,11 +129,11 @@ public class OrderDetails extends BaseEntity {
 		return authorization;
 	}
 
-	public List<LinkedHashMap> getLineItems() {
+	public List<LineItems> getLineItems() {
 		return lineItems;
 	}
 
-	public void addLineItems(List<LinkedHashMap> lineItems) {
+	public void addLineItems(List<LineItems> lineItems) {
 		this.lineItems = lineItems;
 	}
 
@@ -133,9 +145,36 @@ public class OrderDetails extends BaseEntity {
 		return orderDate;
 	}
 
+	public OrderDetails paymentId(String paymentId) {
+		this.paymentId = paymentId;
+		return this;
+	}
+	
+	public OrderDetails cartId(String cartId) {
+		this.cartId = cartId;
+		return this;
+	}
+	
+	public OrderDetails authorization(String authorization) {
+		this.authorization = authorization;
+		return this;
+	}
+
+	public OrderDetails paymentStatus(boolean status) {
+		this.paymentStatus = status;
+		if(this.paymentStatus) {
+			this.stage = 2;
+		}
+		return this;
+	}
+	
+	public int getStage() {
+		return stage;
+	}
+
 	@Override
 	public String toString() {
-		return id + "|" + cartId + "|" + customerId + "|" + total + "|" + paymentStatus;
+		return id + "|" + cartId + "|" + customerId + "|" + total + "|" + paymentStatus +"|"+lineItems;
 	}
 
 	@Override

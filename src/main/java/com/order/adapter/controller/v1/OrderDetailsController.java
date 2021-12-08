@@ -36,4 +36,15 @@ public class OrderDetailsController {
 						new Response<List<OrderDetails>>(false, "Record not found"), HttpStatus.NOT_FOUND));
 
 	}
+	
+	@GetMapping(value = "/checkout")
+	public Mono<ResponseEntity<Response<OrderDetails>>> fetchCheckOutOrderDetails() {
+
+		return svc.fetchCheckOutOrderDetails()
+				.map(list -> new ResponseEntity<Response<OrderDetails>>(
+						new Response<OrderDetails>(true, "Record retrieved successully", list), HttpStatus.OK))
+				.defaultIfEmpty(new ResponseEntity<Response<OrderDetails>>(
+						new Response<OrderDetails>(false, "Record not found"), HttpStatus.NOT_FOUND));
+
+	}
 }

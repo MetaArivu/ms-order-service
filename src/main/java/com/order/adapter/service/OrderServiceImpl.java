@@ -1,5 +1,6 @@
 package com.order.adapter.service;
 
+import static com.order.APPConstant.KAFKA_TOPIC_CART_AGGREGATE_EVENT;
 import static com.order.APPConstant.KAFKA_TOPIC_PAYMENT_EVENT;
 
 import java.util.Iterator;
@@ -22,11 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.order.adapter.dto.PaymentDetails;
+import com.order.adapter.dto.ShoppingCart;
 import com.order.adapter.entities.OrderDetails;
 import com.order.adapter.repository.OrderRepository;
 import com.order.domainlayer.service.OrderService;
 import com.order.server.config.AppProperties;
-import com.order.server.exceptions.InvalidInputException;
 import com.order.server.secutiry.JWTUtil;
 
 import reactor.core.publisher.Flux;
@@ -55,11 +56,50 @@ public class OrderServiceImpl implements OrderService {
 		String userId = jwtUtil.getUserIdFromToken(authHeader);
 		return repo.findByCustomerId(userId);
 	}
+	
+	@Override
+	public Mono<OrderDetails> fetchCheckOutOrderDetails() {
+		String authHeader = MDC.get("Authorization");
+		String userId = jwtUtil.getUserIdFromToken(authHeader);
+		return repo.findByCustomerIdAndStageAndActive(userId, 1, true);
+	}
 
+	@Override
+	@KafkaListener(topics = { KAFKA_TOPIC_CART_AGGREGATE_EVENT })
+	public void consumeCartEvent(ConsumerRecord<String, String> event, @Headers MessageHeaders headers) {
+		log.info("Shopping Cart Event Received key={}, offset={}, partition={}", event.key(), event.offset(), event.partition());
+		log.info("Shopping Cart Message={}", event.value());
+		ShoppingCart cart = ShoppingCart.parse(event.value());
+		if(cart!=null && cart.isInCheckOutStage()) {
+
+			repo.findByCustomerIdAndStageAndActive(cart.getCustomerId(), 1, true)
+				.subscribe(od ->{
+					od.setActive(false);
+					repo.save(od)
+						.subscribe(_od->{
+							log.info("Deactived Previous Order Which Was in Check Out Stage, ID={}",_od.getId());
+						});
+				});
+			
+			OrderDetails orderDetails = OrderDetails.build()
+					.customerId(cart.getCustomerId())
+					.lineItems(cart.getLineItems())
+					.stage(1)
+					.paymentStatus(false)
+					.total(cart.getTotal())
+					.build();
+			log.info("Order Details={}",orderDetails);
+			repo.save(orderDetails).subscribe(od->{
+				log.info("Order Created, Id={}, OrderNo={}", od.getId(), od.getOrderNo());
+			});
+			
+		}
+	}
+	
 	@Override
 	@KafkaListener(topics = { KAFKA_TOPIC_PAYMENT_EVENT })
 	public void consumePaymentEvent(ConsumerRecord<String, String> event, @Headers MessageHeaders headers) {
-		log.info("Shopping Cart Event Received key={}, offset={}, partition={}", event.key(), event.offset(),
+		log.info("Payment Event Received key={}, offset={}, partition={}", event.key(), event.offset(),
 				event.partition());
 		log.info("Shopping Cart Message={}", event.value());
 		String authHeader = "";
@@ -74,14 +114,23 @@ public class OrderServiceImpl implements OrderService {
 
 		if (event.value() != null && jwtUtil.validateBearerToken(authHeader)) {
 			PaymentDetails paymentDetails = PaymentDetails.parse(event.value());
-			log.info("Shopping Cart ={}", paymentDetails);
-
-			OrderDetails orderDetails = OrderDetails.build().cartId(paymentDetails.getCartId())
-					.customerId(paymentDetails.getCustomerId()).paymentStatus(paymentDetails.isStatus())
-					.authorization(authHeader).total(paymentDetails.getTotal()).build();
-
-			repo.save(orderDetails).subscribe(this::updateOrderDetails);
-
+			paymentDetails.setAuthorization(authHeader);
+			log.info("Payment Details ={}", paymentDetails);
+			log.info("Payment Order Id ={}, Status={}",paymentDetails.getOrderId(), paymentDetails.isStatus());
+			repo.findById(paymentDetails.getOrderId())
+				.subscribe(od->{
+					log.info("OD={}",od);
+					od.paymentId(paymentDetails.getId())
+					  .paymentStatus(paymentDetails.isStatus())
+					  .cartId(paymentDetails.getCartId())
+					  .authorization(paymentDetails.getAuthorization());
+					log.info("OD Before Save={}",od);
+					repo.save(od)
+						.subscribe(newod->{
+							log.info("Order Details Updated={}",newod);
+							this.clearCart(paymentDetails.getAuthorization());
+						});
+				});
 		} else {
 			log.error("Invalid Authorization Token={}", authHeader);
 		}
@@ -89,6 +138,8 @@ public class OrderServiceImpl implements OrderService {
 	}
 
 	private void updateOrderDetails(OrderDetails od) {
+		this.clearCart(od.getAuthorization());
+		/*
 		log.info("Order Created Id={} For Customer={}", od.getId(), od.getCustomerId());
 		List<LinkedHashMap> data = this.fetchCartDetails(od.getAuthorization());
 		od.addLineItems(data);
@@ -96,7 +147,7 @@ public class OrderServiceImpl implements OrderService {
 		repo.save(od).subscribe((_od) -> {
 			log.info("Attached Line Items To Order Detals {}", _od);
 			this.clearCart(od.getAuthorization());
-		});
+		});*/
 	}
 
 	private List<LinkedHashMap> fetchCartDetails(String authHeader) {

@@ -13,5 +13,10 @@ import reactor.core.publisher.Mono;
 public interface OrderRepository extends ReactiveMongoRepository<OrderDetails, String> {
 
 	public Flux<OrderDetails> findByCustomerId(String customerId);
+	
+	public Flux<OrderDetails> findByCustomerIdAndStage(String customerId, int stage);
+	
+	public Mono<OrderDetails> findByCustomerIdAndStageAndActive(String customerId, int stage, boolean active);
+
 
 }

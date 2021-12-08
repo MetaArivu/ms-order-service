@@ -7,17 +7,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class PaymentDetails {
 
 	private String id;
+	private String orderId;
+	private String orderNo;
 	private String cartId;
 	private String customerId;
 	private double total;
 	private boolean status;
-
+	private String authorization;
+	
 	public String getId() {
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getOrderId() {
+		return orderId;
+	}
+
+	public void setOrderId(String orderId) {
+		this.orderId = orderId;
+	}
+
+	public String getOrderNo() {
+		return orderNo;
+	}
+
+	public void setOrderNo(String orderNo) {
+		this.orderNo = orderNo;
 	}
 
 	public String getCartId() {
@@ -50,6 +69,15 @@ public class PaymentDetails {
 
 	public void setStatus(boolean status) {
 		this.status = status;
+	}
+
+	
+	public String getAuthorization() {
+		return authorization;
+	}
+
+	public void setAuthorization(String authorization) {
+		this.authorization = authorization;
 	}
 
 	public boolean isValid() {
